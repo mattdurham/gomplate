@@ -20,16 +20,16 @@ func TestBindPlugins(t *testing.T) {
 	cfg := &config.Config{
 		Plugins: map[string]string{},
 	}
-	err := bindPlugins(ctx, cfg, fm)
+	err := BindPlugins(ctx, cfg, fm)
 	assert.NilError(t, err)
 	assert.DeepEqual(t, template.FuncMap{}, fm)
 
 	cfg.Plugins = map[string]string{"foo": "bar"}
-	err = bindPlugins(ctx, cfg, fm)
+	err = BindPlugins(ctx, cfg, fm)
 	assert.NilError(t, err)
 	assert.Check(t, cmp.Contains(fm, "foo"))
 
-	err = bindPlugins(ctx, cfg, fm)
+	err = BindPlugins(ctx, cfg, fm)
 	assert.ErrorContains(t, err, "already bound")
 }
 

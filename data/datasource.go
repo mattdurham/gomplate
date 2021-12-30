@@ -77,7 +77,7 @@ func (d *Data) lookupReader(scheme string) (func(*Source, ...string) ([]byte, er
 
 // Data -
 type Data struct {
-	ctx context.Context
+	Ctx context.Context
 
 	Sources map[string]*Source
 
@@ -130,7 +130,7 @@ func FromConfig(ctx context.Context, cfg *config.Config) *Data {
 		}
 	}
 	return &Data{
-		ctx:          ctx,
+		Ctx:          ctx,
 		Sources:      sources,
 		extraHeaders: cfg.ExtraHeaders,
 	}

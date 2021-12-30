@@ -2,7 +2,7 @@ package gomplate
 
 import "time"
 
-// Metrics tracks interesting basic metrics around gomplate executions. Warning: experimental!
+// Metrics tracks interesting basic metrics around Gomplate executions. Warning: experimental!
 // This may change in breaking ways without warning. This is not subject to any semantic versioning guarantees!
 var Metrics *MetricsType
 

@@ -17,7 +17,7 @@ import (
 	"github.com/hairyhenderson/gomplate/v3/internal/config"
 )
 
-func bindPlugins(ctx context.Context, cfg *config.Config, funcMap template.FuncMap) error {
+func BindPlugins(ctx context.Context, cfg *config.Config, funcMap template.FuncMap) error {
 	for k, v := range cfg.Plugins {
 		plugin := &plugin{
 			ctx:     ctx,

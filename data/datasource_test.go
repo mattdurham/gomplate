@@ -346,7 +346,7 @@ func TestFromConfig(t *testing.T) {
 	ctx := context.Background()
 	cfg := &config.Config{}
 	expected := &Data{
-		ctx:     ctx,
+		Ctx:     ctx,
 		Sources: map[string]*Source{},
 	}
 	assert.EqualValues(t, expected, FromConfig(ctx, cfg))
@@ -359,7 +359,7 @@ func TestFromConfig(t *testing.T) {
 		},
 	}
 	expected = &Data{
-		ctx: ctx,
+		Ctx: ctx,
 		Sources: map[string]*Source{
 			"foo": {
 				Alias: "foo",
@@ -390,7 +390,7 @@ func TestFromConfig(t *testing.T) {
 		},
 	}
 	expected = &Data{
-		ctx: ctx,
+		Ctx: ctx,
 		Sources: map[string]*Source{
 			"foo": {
 				Alias: "foo",

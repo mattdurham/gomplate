@@ -16,20 +16,20 @@ import (
 	"github.com/zealic/xignore"
 )
 
-// ignorefile name, like .gitignore
+// ignorefile Name, like .gitignore
 const gomplateignore = ".gomplateignore"
 
 // for overriding in tests
 var fs = afero.NewOsFs()
 
-// tplate - models a gomplate template file...
-type tplate struct {
-	name         string
-	targetPath   string
-	target       io.Writer
-	contents     string
-	mode         os.FileMode
-	modeOverride bool
+// Tplate - models a Gomplate template file...
+type Tplate struct {
+	Name         string
+	TargetPath   string
+	Target       io.Writer
+	Contents     string
+	Mode         os.FileMode
+	ModeOverride bool
 }
 
 func addTmplFuncs(f template.FuncMap, root *template.Template, ctx interface{}) {
@@ -39,19 +39,19 @@ func addTmplFuncs(f template.FuncMap, root *template.Template, ctx interface{}) 
 	f["tpl"] = t.Inline
 }
 
-func (t *tplate) toGoTemplate(g *gomplate) (tmpl *template.Template, err error) {
+func (t *Tplate) ToGoTemplate(g *Gomplate) (tmpl *template.Template, err error) {
 	if g.rootTemplate != nil {
-		tmpl = g.rootTemplate.New(t.name)
+		tmpl = g.rootTemplate.New(t.Name)
 	} else {
-		tmpl = template.New(t.name)
+		tmpl = template.New(t.Name)
 		g.rootTemplate = tmpl
 	}
 	tmpl.Option("missingkey=error")
 	// the "tmpl" funcs get added here because they need access to the root template and context
-	addTmplFuncs(g.funcMap, g.rootTemplate, g.tmplctx)
+	addTmplFuncs(g.funcMap, g.rootTemplate, g.Tmplctx)
 	tmpl.Funcs(g.funcMap)
 	tmpl.Delims(g.leftDelim, g.rightDelim)
-	_, err = tmpl.Parse(t.contents)
+	_, err = tmpl.Parse(t.Contents)
 	if err != nil {
 		return nil, err
 	}
@@ -70,11 +70,11 @@ func (t *tplate) toGoTemplate(g *gomplate) (tmpl *template.Template, err error) 
 }
 
 // loadContents - reads the template
-func (t *tplate) loadContents(in io.Reader) ([]byte, error) {
+func (t *Tplate) loadContents(in io.Reader) ([]byte, error) {
 	if in == nil {
-		f, err := fs.OpenFile(t.name, os.O_RDONLY, 0)
+		f, err := fs.OpenFile(t.Name, os.O_RDONLY, 0)
 		if err != nil {
-			return nil, fmt.Errorf("failed to open %s: %w", t.name, err)
+			return nil, fmt.Errorf("failed to open %s: %w", t.Name, err)
 		}
 		// nolint: errcheck
 		defer f.Close()
@@ -83,7 +83,7 @@ func (t *tplate) loadContents(in io.Reader) ([]byte, error) {
 
 	b, err := ioutil.ReadAll(in)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load contents of %s: %w", t.name, err)
+		return nil, fmt.Errorf("failed to load Contents of %s: %w", t.Name, err)
 	}
 
 	return b, nil
@@ -91,21 +91,21 @@ func (t *tplate) loadContents(in io.Reader) ([]byte, error) {
 
 // gatherTemplates - gather and prepare input template(s) and output file(s) for rendering
 // nolint: gocyclo
-func gatherTemplates(cfg *config.Config, outFileNamer func(string) (string, error)) (templates []*tplate, err error) {
+func gatherTemplates(cfg *config.Config, outFileNamer func(string) (string, error)) (templates []*Tplate, err error) {
 	mode, modeOverride, err := cfg.GetMode()
 	if err != nil {
 		return nil, err
 	}
 
 	switch {
-	// the arg-provided input string gets a special name
+	// the arg-provided input string gets a special Name
 	case cfg.Input != "":
-		templates = []*tplate{{
-			name:         "<arg>",
-			contents:     cfg.Input,
-			mode:         mode,
-			modeOverride: modeOverride,
-			targetPath:   cfg.OutputFiles[0],
+		templates = []*Tplate{{
+			Name:         "<arg>",
+			Contents:     cfg.Input,
+			Mode:         mode,
+			ModeOverride: modeOverride,
+			TargetPath:   cfg.OutputFiles[0],
 		}}
 	case cfg.InputDir != "":
 		// input dirs presume output dirs are set too
@@ -114,7 +114,7 @@ func gatherTemplates(cfg *config.Config, outFileNamer func(string) (string, erro
 			return nil, err
 		}
 	case cfg.Input == "":
-		templates = make([]*tplate, len(cfg.InputFiles))
+		templates = make([]*Tplate, len(cfg.InputFiles))
 		for i := range cfg.InputFiles {
 			templates[i], err = fileToTemplates(cfg.InputFiles[i], cfg.OutputFiles[i], mode, modeOverride)
 			if err != nil {
@@ -128,11 +128,11 @@ func gatherTemplates(cfg *config.Config, outFileNamer func(string) (string, erro
 
 // processTemplates - reads data into the given templates as necessary and opens
 // outputs for writing as necessary
-func processTemplates(cfg *config.Config, templates []*tplate) ([]*tplate, error) {
+func processTemplates(cfg *config.Config, templates []*Tplate) ([]*Tplate, error) {
 	for _, t := range templates {
-		if t.contents == "" {
+		if t.Contents == "" {
 			var in io.Reader
-			if t.name == "-" {
+			if t.Name == "-" {
 				in = cfg.Stdin
 			}
 
@@ -141,16 +141,16 @@ func processTemplates(cfg *config.Config, templates []*tplate) ([]*tplate, error
 				return nil, err
 			}
 
-			t.contents = string(b)
+			t.Contents = string(b)
 		}
 
-		if t.target == nil {
-			out, err := openOutFile(cfg, t.targetPath, t.mode, t.modeOverride)
+		if t.Target == nil {
+			out, err := openOutFile(cfg, t.TargetPath, t.Mode, t.ModeOverride)
 			if err != nil {
 				return nil, err
 			}
 
-			t.target = out
+			t.Target = out
 		}
 	}
 
@@ -159,8 +159,8 @@ func processTemplates(cfg *config.Config, templates []*tplate) ([]*tplate, error
 
 // walkDir - given an input dir `dir` and an output dir `outDir`, and a list
 // of .gomplateignore and exclude globs (if any), walk the input directory and create a list of
-// tplate objects, and an error, if any.
-func walkDir(dir string, outFileNamer func(string) (string, error), excludeGlob []string, mode os.FileMode, modeOverride bool) ([]*tplate, error) {
+// Tplate objects, and an error, if any.
+func walkDir(dir string, outFileNamer func(string) (string, error), excludeGlob []string, mode os.FileMode, modeOverride bool) ([]*Tplate, error) {
 	dir = filepath.Clean(dir)
 
 	dirStat, err := fs.Stat(dir)
@@ -169,7 +169,7 @@ func walkDir(dir string, outFileNamer func(string) (string, error), excludeGlob 
 	}
 	dirMode := dirStat.Mode()
 
-	templates := make([]*tplate, 0)
+	templates := make([]*Tplate, 0)
 	matcher := xignore.NewMatcher(fs)
 
 	// work around bug in xignore - a basedir of '.' doesn't work
@@ -210,18 +210,18 @@ func walkDir(dir string, outFileNamer func(string) (string, error), excludeGlob 
 			return nil, err
 		}
 
-		templates = append(templates, &tplate{
-			name:         nextInPath,
-			targetPath:   nextOutPath,
-			mode:         fMode,
-			modeOverride: modeOverride,
+		templates = append(templates, &Tplate{
+			Name:         nextInPath,
+			TargetPath:   nextOutPath,
+			Mode:         fMode,
+			ModeOverride: modeOverride,
 		})
 	}
 
 	return templates, nil
 }
 
-func fileToTemplates(inFile, outFile string, mode os.FileMode, modeOverride bool) (*tplate, error) {
+func fileToTemplates(inFile, outFile string, mode os.FileMode, modeOverride bool) (*Tplate, error) {
 	if inFile != "-" {
 		si, err := fs.Stat(inFile)
 		if err != nil {
@@ -231,11 +231,11 @@ func fileToTemplates(inFile, outFile string, mode os.FileMode, modeOverride bool
 			mode = si.Mode()
 		}
 	}
-	tmpl := &tplate{
-		name:         inFile,
-		targetPath:   outFile,
-		mode:         mode,
-		modeOverride: modeOverride,
+	tmpl := &Tplate{
+		Name:         inFile,
+		TargetPath:   outFile,
+		Mode:         mode,
+		ModeOverride: modeOverride,
 	}
 
 	return tmpl, nil
@@ -263,7 +263,7 @@ func createOutFile(filename string, mode os.FileMode, modeOverride bool) (out io
 	if modeOverride {
 		err = fs.Chmod(filename, mode)
 		if err != nil && !os.IsNotExist(err) {
-			return nil, fmt.Errorf("failed to chmod output file '%s' with mode %q: %w", filename, mode, err)
+			return nil, fmt.Errorf("failed to chmod output file '%s' with Mode %q: %w", filename, mode, err)
 		}
 	}
 

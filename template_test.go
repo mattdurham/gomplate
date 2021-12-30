@@ -46,12 +46,12 @@ func TestLoadContents(t *testing.T) {
 	defer func() { fs = origfs }()
 	fs = afero.NewMemMapFs()
 
-	afero.WriteFile(fs, "foo", []byte("contents"), 0644)
+	afero.WriteFile(fs, "foo", []byte("Contents"), 0644)
 
-	tmpl := &tplate{name: "foo"}
+	tmpl := &Tplate{Name: "foo"}
 	b, err := tmpl.loadContents(nil)
 	assert.NoError(t, err)
-	assert.Equal(t, "contents", string(b))
+	assert.Equal(t, "Contents", string(b))
 }
 
 func TestGatherTemplates(t *testing.T) {
@@ -81,8 +81,8 @@ func TestGatherTemplates(t *testing.T) {
 	templates, err = gatherTemplates(cfg, nil)
 	assert.NoError(t, err)
 	assert.Len(t, templates, 1)
-	assert.Equal(t, "foo", templates[0].contents)
-	assert.Equal(t, cfg.Stdout, templates[0].target)
+	assert.Equal(t, "foo", templates[0].Contents)
+	assert.Equal(t, cfg.Stdout, templates[0].Target)
 
 	templates, err = gatherTemplates(&config.Config{
 		Input:       "foo",
@@ -90,15 +90,15 @@ func TestGatherTemplates(t *testing.T) {
 	}, nil)
 	assert.NoError(t, err)
 	assert.Len(t, templates, 1)
-	assert.Equal(t, "out", templates[0].targetPath)
-	assert.Equal(t, iohelpers.NormalizeFileMode(0644), templates[0].mode)
+	assert.Equal(t, "out", templates[0].TargetPath)
+	assert.Equal(t, iohelpers.NormalizeFileMode(0644), templates[0].Mode)
 
 	// out file is created only on demand
 	_, err = fs.Stat("out")
 	assert.Error(t, err)
 	assert.True(t, os.IsNotExist(err))
 
-	_, err = templates[0].target.Write([]byte("hello world"))
+	_, err = templates[0].Target.Write([]byte("hello world"))
 	assert.NoError(t, err)
 
 	info, err := fs.Stat("out")
@@ -114,11 +114,11 @@ func TestGatherTemplates(t *testing.T) {
 	templates, err = gatherTemplates(cfg, nil)
 	assert.NoError(t, err)
 	assert.Len(t, templates, 1)
-	assert.Equal(t, "bar", templates[0].contents)
-	assert.NotEqual(t, cfg.Stdout, templates[0].target)
-	assert.Equal(t, os.FileMode(0600), templates[0].mode)
+	assert.Equal(t, "bar", templates[0].Contents)
+	assert.NotEqual(t, cfg.Stdout, templates[0].Target)
+	assert.Equal(t, os.FileMode(0600), templates[0].Mode)
 
-	_, err = templates[0].target.Write([]byte("hello world"))
+	_, err = templates[0].Target.Write([]byte("hello world"))
 	assert.NoError(t, err)
 
 	info, err = fs.Stat("out")
@@ -135,11 +135,11 @@ func TestGatherTemplates(t *testing.T) {
 	templates, err = gatherTemplates(cfg, nil)
 	assert.NoError(t, err)
 	assert.Len(t, templates, 1)
-	assert.Equal(t, "bar", templates[0].contents)
-	assert.NotEqual(t, cfg.Stdout, templates[0].target)
-	assert.Equal(t, iohelpers.NormalizeFileMode(0755), templates[0].mode)
+	assert.Equal(t, "bar", templates[0].Contents)
+	assert.NotEqual(t, cfg.Stdout, templates[0].Target)
+	assert.Equal(t, iohelpers.NormalizeFileMode(0755), templates[0].Mode)
 
-	_, err = templates[0].target.Write([]byte("hello world"))
+	_, err = templates[0].Target.Write([]byte("hello world"))
 	assert.NoError(t, err)
 
 	info, err = fs.Stat("out")
@@ -153,7 +153,7 @@ func TestGatherTemplates(t *testing.T) {
 	}, simpleNamer("out"))
 	assert.NoError(t, err)
 	assert.Len(t, templates, 3)
-	assert.Equal(t, "foo", templates[0].contents)
+	assert.Equal(t, "foo", templates[0].Contents)
 	fs.Remove("out")
 }
 
@@ -173,52 +173,52 @@ func TestProcessTemplates(t *testing.T) {
 		Stdout: &bytes.Buffer{},
 	}
 	testdata := []struct {
-		templates []*tplate
+		templates []*Tplate
 		contents  []string
 		modes     []os.FileMode
 		targets   []io.Writer
 	}{
 		{},
 		{
-			templates: []*tplate{{name: "<arg>", contents: "foo", targetPath: "-", mode: 0644}},
+			templates: []*Tplate{{Name: "<arg>", Contents: "foo", TargetPath: "-", Mode: 0644}},
 			contents:  []string{"foo"},
 			modes:     []os.FileMode{0644},
 			targets:   []io.Writer{cfg.Stdout},
 		},
 		{
-			templates: []*tplate{{name: "<arg>", contents: "foo", targetPath: "out", mode: 0644}},
+			templates: []*Tplate{{Name: "<arg>", Contents: "foo", TargetPath: "out", Mode: 0644}},
 			contents:  []string{"foo"},
 			modes:     []os.FileMode{0644},
 		},
 		{
-			templates: []*tplate{{name: "foo", targetPath: "out", mode: 0600}},
+			templates: []*Tplate{{Name: "foo", TargetPath: "out", Mode: 0600}},
 			contents:  []string{"bar"},
 			modes:     []os.FileMode{0600},
 		},
 		{
-			templates: []*tplate{{name: "foo", targetPath: "out", mode: 0755}},
+			templates: []*Tplate{{Name: "foo", TargetPath: "out", Mode: 0755}},
 			contents:  []string{"bar"},
 			modes:     []os.FileMode{0755},
 		},
 		{
-			templates: []*tplate{
-				{name: "in/1", targetPath: "out/1", mode: 0644},
-				{name: "in/2", targetPath: "out/2", mode: 0640},
-				{name: "in/3", targetPath: "out/3", mode: 0644},
+			templates: []*Tplate{
+				{Name: "in/1", TargetPath: "out/1", Mode: 0644},
+				{Name: "in/2", TargetPath: "out/2", Mode: 0640},
+				{Name: "in/3", TargetPath: "out/3", Mode: 0644},
 			},
 			contents: []string{"foo", "bar", "baz"},
 			modes:    []os.FileMode{0644, 0640, 0644},
 		},
 		{
-			templates: []*tplate{
-				{name: "foo", targetPath: "existing", mode: 0755},
+			templates: []*Tplate{
+				{Name: "foo", TargetPath: "existing", Mode: 0755},
 			},
 			contents: []string{"bar"},
 			modes:    []os.FileMode{0644},
 		},
 		{
-			templates: []*tplate{
-				{name: "foo", targetPath: "existing", mode: 0755, modeOverride: true},
+			templates: []*Tplate{
+				{Name: "foo", TargetPath: "existing", Mode: 0755, ModeOverride: true},
 			},
 			contents: []string{"bar"},
 			modes:    []os.FileMode{0755},
@@ -232,20 +232,20 @@ func TestProcessTemplates(t *testing.T) {
 			assert.Len(t, actual, len(in.templates))
 			for i, a := range actual {
 				current := in.templates[i]
-				assert.Equal(t, in.contents[i], a.contents)
-				assert.Equal(t, current.mode, a.mode)
+				assert.Equal(t, in.contents[i], a.Contents)
+				assert.Equal(t, current.Mode, a.Mode)
 				if len(in.targets) > 0 {
-					assert.Equal(t, in.targets[i], a.target)
+					assert.Equal(t, in.targets[i], a.Target)
 				}
-				if current.targetPath != "-" && current.name != "<arg>" {
+				if current.TargetPath != "-" && current.Name != "<arg>" {
 					_, err = current.loadContents(nil)
 					assert.NoError(t, err)
 
-					n, err := current.target.Write([]byte("hello world"))
+					n, err := current.Target.Write([]byte("hello world"))
 					assert.NoError(t, err)
 					assert.Equal(t, 11, n)
 
-					info, err := fs.Stat(current.targetPath)
+					info, err := fs.Stat(current.TargetPath)
 					assert.NoError(t, err)
 					assert.Equal(t, iohelpers.NormalizeFileMode(in.modes[i]), info.Mode())
 				}

@@ -5,3 +5,5 @@ report.xml
 *.cid
 *.iid
 *.out
+**/vendor
+**/.idea

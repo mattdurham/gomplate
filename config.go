@@ -9,7 +9,7 @@ import (
 	"github.com/hairyhenderson/gomplate/v3/internal/iohelpers"
 )
 
-// Config - values necessary for rendering templates with gomplate.
+// Config - values necessary for rendering templates with Gomplate.
 // Mainly for use by the CLI
 //
 // Deprecated: this type will be phased out, internal/config.Config is used

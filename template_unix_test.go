@@ -28,16 +28,16 @@ func TestWalkDir(t *testing.T) {
 	templates, err := walkDir("/indir", simpleNamer("/outdir"), []string{"*/two"}, 0, false)
 
 	assert.NoError(t, err)
-	expected := []*tplate{
+	expected := []*Tplate{
 		{
-			name:       "/indir/one/bar",
-			targetPath: "/outdir/one/bar",
-			mode:       0664,
+			Name:       "/indir/one/bar",
+			TargetPath: "/outdir/one/bar",
+			Mode:       0664,
 		},
 		{
-			name:       "/indir/one/foo",
-			targetPath: "/outdir/one/foo",
-			mode:       0644,
+			Name:       "/indir/one/foo",
+			TargetPath: "/outdir/one/foo",
+			Mode:       0644,
 		},
 	}
 	assert.EqualValues(t, expected, templates)

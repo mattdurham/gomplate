@@ -1,4 +1,4 @@
-// Package gomplate is a template renderer which supports a number of datasources,
+// Package gomplate  is a template renderer which supports a number of datasources,
 // and includes hundreds of built-in functions.
 package gomplate
 
@@ -21,9 +21,9 @@ import (
 	"github.com/spf13/afero"
 )
 
-// gomplate -
-type gomplate struct {
-	tmplctx         interface{}
+// Gomplate -
+type Gomplate struct {
+	Tmplctx         interface{}
 	funcMap         template.FuncMap
 	nestedTemplates templateAliases
 	rootTemplate    *template.Template
@@ -32,34 +32,34 @@ type gomplate struct {
 }
 
 // runTemplate -
-func (g *gomplate) runTemplate(_ context.Context, t *tplate) error {
-	tmpl, err := t.toGoTemplate(g)
+func (g *Gomplate) runTemplate(_ context.Context, t *Tplate) error {
+	tmpl, err := t.ToGoTemplate(g)
 	if err != nil {
 		return err
 	}
 
 	// nolint: gocritic
-	switch t.target.(type) {
+	switch t.Target.(type) {
 	case io.Closer:
-		if t.target != os.Stdout {
+		if t.Target != os.Stdout {
 			// nolint: errcheck
-			defer t.target.(io.Closer).Close()
+			defer t.Target.(io.Closer).Close()
 		}
 	}
-	err = tmpl.Execute(t.target, g.tmplctx)
+	err = tmpl.Execute(t.Target, g.Tmplctx)
 	return err
 }
 
 type templateAliases map[string]string
 
-// newGomplate -
-func newGomplate(funcMap template.FuncMap, leftDelim, rightDelim string, nested templateAliases, tctx interface{}) *gomplate {
-	return &gomplate{
+// NewGomplate -
+func NewGomplate(funcMap template.FuncMap, leftDelim, rightDelim string, nested templateAliases, tctx interface{}) *Gomplate {
+	return &Gomplate{
 		leftDelim:       leftDelim,
 		rightDelim:      rightDelim,
 		funcMap:         funcMap,
 		nestedTemplates: nested,
-		tmplctx:         tctx,
+		Tmplctx:         tctx,
 	}
 }
 
@@ -110,7 +110,7 @@ func parseTemplateArg(templateArg string, ta templateAliases) error {
 	return nil
 }
 
-// RunTemplates - run all gomplate templates specified by the given configuration
+// RunTemplates - run all Gomplate templates specified by the given configuration
 //
 // Deprecated: use Run instead
 func RunTemplates(o *Config) error {
@@ -121,7 +121,7 @@ func RunTemplates(o *Config) error {
 	return Run(context.Background(), cfg)
 }
 
-// Run all gomplate templates specified by the given configuration
+// Run all Gomplate templates specified by the given configuration
 func Run(ctx context.Context, cfg *config.Config) error {
 	log := zerolog.Ctx(ctx)
 
@@ -141,16 +141,16 @@ func Run(ctx context.Context, cfg *config.Config) error {
 		return err
 	}
 	funcMap := CreateFuncs(ctx, d)
-	err = bindPlugins(ctx, cfg, funcMap)
+	err = BindPlugins(ctx, cfg, funcMap)
 	if err != nil {
 		return err
 	}
-	g := newGomplate(funcMap, cfg.LDelim, cfg.RDelim, nested, c)
+	g := NewGomplate(funcMap, cfg.LDelim, cfg.RDelim, nested, c)
 
 	return g.runTemplates(ctx, cfg)
 }
 
-func (g *gomplate) runTemplates(ctx context.Context, cfg *config.Config) error {
+func (g *Gomplate) runTemplates(ctx context.Context, cfg *config.Config) error {
 	start := time.Now()
 	tmpl, err := gatherTemplates(cfg, chooseNamer(cfg, g))
 	Metrics.GatherDuration = time.Since(start)
@@ -164,17 +164,17 @@ func (g *gomplate) runTemplates(ctx context.Context, cfg *config.Config) error {
 	for _, t := range tmpl {
 		tstart := time.Now()
 		err := g.runTemplate(ctx, t)
-		Metrics.RenderDuration[t.name] = time.Since(tstart)
+		Metrics.RenderDuration[t.Name] = time.Since(tstart)
 		if err != nil {
 			Metrics.Errors++
-			return fmt.Errorf("failed to render template %s: %w", t.name, err)
+			return fmt.Errorf("failed to render template %s: %w", t.Name, err)
 		}
 		Metrics.TemplatesProcessed++
 	}
 	return nil
 }
 
-func chooseNamer(cfg *config.Config, g *gomplate) func(string) (string, error) {
+func chooseNamer(cfg *config.Config, g *Gomplate) func(string) (string, error) {
 	if cfg.OutputMap == "" {
 		return simpleNamer(cfg.OutputDir)
 	}
@@ -188,32 +188,32 @@ func simpleNamer(outDir string) func(inPath string) (string, error) {
 	}
 }
 
-func mappingNamer(outMap string, g *gomplate) func(string) (string, error) {
+func mappingNamer(outMap string, g *Gomplate) func(string) (string, error) {
 	return func(inPath string) (string, error) {
 		out := &bytes.Buffer{}
-		t := &tplate{
-			name:     "<OutputMap>",
-			contents: outMap,
-			target:   out,
+		t := &Tplate{
+			Name:     "<OutputMap>",
+			Contents: outMap,
+			Target:   out,
 		}
-		tpl, err := t.toGoTemplate(g)
+		tpl, err := t.ToGoTemplate(g)
 		if err != nil {
 			return "", err
 		}
-		tctx := &tmplctx{}
+		tctx := &Tmplctx{}
 		// nolint: gocritic
-		switch c := g.tmplctx.(type) {
-		case *tmplctx:
+		switch c := g.Tmplctx.(type) {
+		case *Tmplctx:
 			for k, v := range *c {
 				if k != "in" && k != "ctx" {
 					(*tctx)[k] = v
 				}
 			}
 		}
-		(*tctx)["ctx"] = g.tmplctx
+		(*tctx)["ctx"] = g.Tmplctx
 		(*tctx)["in"] = inPath
 
-		err = tpl.Execute(t.target, tctx)
+		err = tpl.Execute(t.Target, tctx)
 		if err != nil {
 			return "", errors.Wrapf(err, "failed to render outputMap with ctx %+v and inPath %s", tctx, inPath)
 		}

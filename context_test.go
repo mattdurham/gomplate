@@ -13,13 +13,13 @@ import (
 )
 
 func TestEnvMapifiesEnvironment(t *testing.T) {
-	c := &tmplctx{}
+	c := &Tmplctx{}
 	env := c.Env()
 	assert.Equal(t, env["USER"], os.Getenv("USER"))
 }
 
 func TestEnvGetsUpdatedEnvironment(t *testing.T) {
-	c := &tmplctx{}
+	c := &Tmplctx{}
 	assert.Empty(t, c.Env()["FOO"])
 	assert.NoError(t, os.Setenv("FOO", "foo"))
 	assert.Equal(t, c.Env()["FOO"], "foo")
@@ -45,8 +45,8 @@ func TestCreateContext(t *testing.T) {
 	defer os.Unsetenv("foo")
 	c, err = createTmplContext(ctx, map[string]config.DataSource{"foo": {URL: uf}}, d)
 	assert.NoError(t, err)
-	assert.IsType(t, &tmplctx{}, c)
-	tctx := c.(*tmplctx)
+	assert.IsType(t, &Tmplctx{}, c)
+	tctx := c.(*Tmplctx)
 	ds := ((*tctx)["foo"]).(map[string]interface{})
 	assert.Equal(t, "bar", ds["foo"])
 

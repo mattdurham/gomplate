@@ -20,9 +20,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func testTemplate(g *gomplate, tmpl string) string {
+func testTemplate(g *Gomplate, tmpl string) string {
 	var out bytes.Buffer
-	err := g.runTemplate(context.Background(), &tplate{name: "testtemplate", contents: tmpl, target: &out})
+	err := g.runTemplate(context.Background(), &Tplate{Name: "testtemplate", Contents: tmpl, Target: &out})
 	if err != nil {
 		panic(err)
 	}
@@ -30,7 +30,7 @@ func testTemplate(g *gomplate, tmpl string) string {
 }
 
 func TestGetenvTemplates(t *testing.T) {
-	g := &gomplate{
+	g := &Gomplate{
 		funcMap: template.FuncMap{
 			"getenv": env.Getenv,
 			"bool":   conv.Bool,
@@ -42,7 +42,7 @@ func TestGetenvTemplates(t *testing.T) {
 }
 
 func TestBoolTemplates(t *testing.T) {
-	g := &gomplate{
+	g := &Gomplate{
 		funcMap: template.FuncMap{
 			"bool": conv.Bool,
 		},
@@ -54,9 +54,9 @@ func TestBoolTemplates(t *testing.T) {
 }
 
 func TestEc2MetaTemplates(t *testing.T) {
-	createGomplate := func(status int, body string) (*gomplate, *httptest.Server) {
+	createGomplate := func(status int, body string) (*Gomplate, *httptest.Server) {
 		server, ec2meta := aws.MockServer(status, body)
-		return &gomplate{funcMap: template.FuncMap{"ec2meta": ec2meta.Meta}}, server
+		return &Gomplate{funcMap: template.FuncMap{"ec2meta": ec2meta.Meta}}, server
 	}
 
 	g, s := createGomplate(404, "")
@@ -74,7 +74,7 @@ func TestEc2MetaTemplates(t *testing.T) {
 func TestEc2MetaTemplates_WithJSON(t *testing.T) {
 	server, ec2meta := aws.MockServer(200, `{"foo":"bar"}`)
 	defer server.Close()
-	g := &gomplate{
+	g := &Gomplate{
 		funcMap: template.FuncMap{
 			"ec2meta":    ec2meta.Meta,
 			"ec2dynamic": ec2meta.Dynamic,
@@ -87,7 +87,7 @@ func TestEc2MetaTemplates_WithJSON(t *testing.T) {
 }
 
 func TestJSONArrayTemplates(t *testing.T) {
-	g := &gomplate{
+	g := &Gomplate{
 		funcMap: template.FuncMap{
 			"jsonArray": data.JSONArray,
 		},
@@ -98,7 +98,7 @@ func TestJSONArrayTemplates(t *testing.T) {
 }
 
 func TestYAMLTemplates(t *testing.T) {
-	g := &gomplate{
+	g := &Gomplate{
 		funcMap: template.FuncMap{
 			"yaml":      data.YAML,
 			"yamlArray": data.YAMLArray,
@@ -111,7 +111,7 @@ func TestYAMLTemplates(t *testing.T) {
 }
 
 func TestSliceTemplates(t *testing.T) {
-	g := &gomplate{
+	g := &Gomplate{
 		funcMap: template.FuncMap{
 			"slice": conv.Slice,
 		},
@@ -122,7 +122,7 @@ func TestSliceTemplates(t *testing.T) {
 }
 
 func TestHasTemplate(t *testing.T) {
-	g := &gomplate{
+	g := &Gomplate{
 		funcMap: template.FuncMap{
 			"yaml": data.YAML,
 			"has":  conv.Has,
@@ -146,7 +146,7 @@ func TestHasTemplate(t *testing.T) {
 }
 
 func TestCustomDelim(t *testing.T) {
-	g := &gomplate{
+	g := &Gomplate{
 		leftDelim:  "[",
 		rightDelim: "]",
 		funcMap:    template.FuncMap{},
@@ -236,7 +236,7 @@ func TestSimpleNamer(t *testing.T) {
 }
 
 func TestMappingNamer(t *testing.T) {
-	g := &gomplate{funcMap: map[string]interface{}{
+	g := &Gomplate{funcMap: map[string]interface{}{
 		"foo": func() string { return "foo" },
 	}}
 	n := mappingNamer("out/{{ .in }}", g)
