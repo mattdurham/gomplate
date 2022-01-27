@@ -2,6 +2,7 @@ package funcs
 
 import (
 	"context"
+	"github.com/aws/aws-sdk-go/service/ec2"
 	"sync"
 
 	"github.com/hairyhenderson/gomplate/v3/aws"
@@ -41,6 +42,8 @@ func CreateAWSFuncs(ctx context.Context) map[string]interface{} {
 	f["ec2tag"] = ns.EC2Tag
 	f["ec2tags"] = ns.EC2Tags
 	f["ec2region"] = ns.EC2Region
+	f["ec2query"] = ns.EC2Query
+
 	return f
 }
 
@@ -52,11 +55,15 @@ type Funcs struct {
 	info     *aws.Ec2Info
 	kms      *aws.KMS
 	sts      *aws.STS
-	metaInit sync.Once
-	infoInit sync.Once
-	kmsInit  sync.Once
-	stsInit  sync.Once
-	awsopts  aws.ClientOptions
+	ec2query *aws.Ec2Query
+
+	metaInit     sync.Once
+	infoInit     sync.Once
+	kmsInit      sync.Once
+	stsInit      sync.Once
+	ec2QueryInit sync.Once
+
+	awsopts aws.ClientOptions
 }
 
 // EC2Region -
@@ -99,6 +106,12 @@ func (a *Funcs) KMSEncrypt(keyID, plaintext interface{}) (string, error) {
 func (a *Funcs) KMSDecrypt(ciphertext interface{}) (string, error) {
 	a.kmsInit.Do(a.initKMS)
 	return a.kms.Decrypt(conv.ToString(ciphertext))
+}
+
+// EC2Query -
+func (a *Funcs) EC2Query(tags string) ([]*ec2.Instance, error) {
+	a.ec2QueryInit.Do(a.initEC2Query)
+	return a.ec2query.Query(tags)
 }
 
 // UserID - Gets the unique identifier of the calling entity. The exact value
@@ -145,5 +158,11 @@ func (a *Funcs) initKMS() {
 func (a *Funcs) initSTS() {
 	if a.sts == nil {
 		a.sts = aws.NewSTS(a.awsopts)
+	}
+}
+
+func (a *Funcs) initEC2Query() {
+	if a.ec2query == nil {
+		a.ec2query = aws.NewEc2Query(a.awsopts)
 	}
 }
