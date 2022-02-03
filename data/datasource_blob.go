@@ -20,6 +20,10 @@ import (
 	"gocloud.dev/gcp"
 )
 
+func ReadBlob(url url.URL) (output []byte, err error) {
+	return readBlob(&Source{URL: &url})
+}
+
 func readBlob(source *Source, args ...string) (output []byte, err error) {
 	if len(args) >= 2 {
 		return nil, errors.New("maximum two arguments to blob datasource: alias, extraPath")
