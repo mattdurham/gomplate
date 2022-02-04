@@ -3,10 +3,12 @@ package data
 import (
 	"bytes"
 	"encoding/json"
+	"io/fs"
 	"io/ioutil"
 	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/spf13/afero"
@@ -34,6 +36,18 @@ func readFile(source *Source, args ...string) ([]byte, error) {
 
 	// make sure we can access the file
 	i, err := source.fs.Stat(p)
+	// This is because of windows issue, file:/// requires 3 / and url.parse does not handle the 3rd / well,
+	// translates file:///c:\dir to /c:/dir
+	if strings.HasPrefix(runtime.GOOS, "windows") && strings.HasPrefix(p, "\\") {
+		if _, ok := err.(*fs.PathError); ok {
+			runes := []rune(p)
+			p = string(runes[1:])
+			i, err = source.fs.Stat(p)
+			if err != nil {
+				return nil, errors.Wrapf(err, "Can't stat %s", p)
+			}
+		}
+	}
 	if err != nil {
 		return nil, errors.Wrapf(err, "Can't stat %s", p)
 	}

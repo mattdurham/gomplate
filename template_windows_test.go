@@ -4,6 +4,15 @@
 package gomplate
 
 import (
+	"bytes"
+	"context"
+	"fmt"
+	"github.com/hairyhenderson/gomplate/v3/data"
+	"io/ioutil"
+	"net/url"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/spf13/afero"
@@ -28,17 +37,64 @@ func TestWalkDir(t *testing.T) {
 	templates, err := walkDir(`C:\indir`, simpleNamer(`C:\outdir`), []string{`*\two`}, 0, false)
 
 	assert.NoError(t, err)
-	expected := []*Tplate{
+	expected := []*tplate{
 		{
-			Name:       `C:\indir\one\bar`,
-			TargetPath: `C:\outdir\one\bar`,
-			Mode:       0644,
+			name:       `C:\indir\one\bar`,
+			targetPath: `C:\outdir\one\bar`,
+			mode:       0644,
 		},
 		{
-			Name:       `C:\indir\one\foo`,
-			TargetPath: `C:\outdir\one\foo`,
-			Mode:       0644,
+			name:       `C:\indir\one\foo`,
+			targetPath: `C:\outdir\one\foo`,
+			mode:       0644,
 		},
 	}
 	assert.EqualValues(t, expected, templates)
+}
+
+func TestRunningTemplate(t *testing.T) {
+
+	tDir, err := os.MkdirTemp("", "")
+	t.Cleanup(func() { _ = os.RemoveAll(tDir) })
+	assert.NoError(t, err)
+
+	_ = ioutil.WriteFile(filepath.Join(tDir, `out.json`), []byte(`["banana","pear","apple"]`), 0644)
+
+	template := `
+{{ range (datasource "fruit") -}}
+{{ . }}
+{{ end -}}
+`
+
+	fruitURL, err := url.Parse(fmt.Sprintf(`file:///%s\out.json`, tDir))
+	ctx := context.Background()
+	assert.NoError(t, err)
+	d := &data.Data{
+		Ctx: ctx,
+		Sources: map[string]*data.Source{"fruit": {
+			URL:   fruitURL,
+			Alias: "fruit",
+		}},
+	}
+	funcMap := CreateFuncs(ctx, d)
+	g := &gomplate{
+		tmplctx:         nil,
+		funcMap:         funcMap,
+		nestedTemplates: nil,
+		rootTemplate:    nil,
+		leftDelim:       "{{",
+		rightDelim:      "}}",
+	}
+	var out bytes.Buffer
+	err = g.runTemplate(context.Background(), &tplate{
+		name:     "testtemplate",
+		contents: template,
+		target:   &out,
+	})
+	str := out.String()
+	assert.True(t, strings.Contains(str, "pear"))
+	assert.True(t, strings.Contains(str, "apple"))
+	assert.True(t, strings.Contains(str, "banana"))
+	assert.NoError(t, err)
+
 }
